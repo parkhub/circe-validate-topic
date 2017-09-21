@@ -1,13 +1,18 @@
 import validateTopic from './';
+import createValidatorsMap from './lib/createValidatorsMap';
+import createValidateMiddleware from './lib/createValidateMiddleware';
 
-test('Should validate a topic message', () => {
+jest.mock('./lib/createValidatorsMap');
+jest.mock('./lib/createValidateMiddleware');
+
+test('Should successfully validate a topic message', () => {
   const topic = 'TEST_TOPIC';
   const message = {
     topic,
     hello: 'hi'
   };
 
-  const validate = jest.fn();
+  const validate = jest.fn(() => ({ isValid: true }));
   const validatorCfgs = [
     {
       topic,
@@ -15,31 +20,15 @@ test('Should validate a topic message', () => {
     }
   ];
 
-  const validator = validateTopic(validatorCfgs);
+  const next = jest.fn();
 
-  validator({ topic, message });
+  const validator = validateTopic({ validators: validatorCfgs });
 
-  expect(validate).toHaveBeenCalledWith(message);
-});
+  const validateCfgs = { topic, message };
+  validator(validateCfgs, next);
 
-test('Should do nothing if topic does not exist', () => {
-  const topic = 'TEST_TOPIC';
-  const message = {
-    topic,
-    hello: 'hi'
-  };
+  expect(createValidatorsMap).toHaveBeenCalledWith(validatorCfgs);
 
-  const validate = jest.fn();
-  const validatorCfgs = [
-    {
-      topic,
-      validate
-    }
-  ];
-
-  const validator = validateTopic(validatorCfgs);
-
-  validator({ topic: 'NO_EXIST', message });
-
-  expect(validate).toHaveBeenCalledTimes(0);
+  /* eslint-disable no-underscore-dangle */
+  expect(createValidateMiddleware.__mocks__).toHaveBeenCalledWith(validateCfgs, next);
 });

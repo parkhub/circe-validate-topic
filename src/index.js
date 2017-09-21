@@ -5,30 +5,29 @@
  * @author Daniel Olivares
  */
 
+import createValidatorsMap from './lib/createValidatorsMap';
+import createValidateMiddleware from './lib/createValidateMiddleware';
+
+import type { ValidatorCfg } from './lib/createValidatorsMap';
+import type { ErrorHandler } from './lib/createValidateMiddleware';
+
 type Message = string | Object;
-type Validator = ({ topic: string, message: Message }) => void;
-type ValidatorConfigurations = {|
-  topic: string,
-  validate: (message: Message) => void
+type ObjectToValidate = {
+  message: Message,
+  topic: string
+};
+
+type ValidatorMiddleware = (ObjectToValidate, (ObjectToValidate) => void) => void;
+
+type Configurations = {|
+  validators: ValidatorCfg[],
+  onTopicValidatorNotFound: ErrorHandler
 |};
 
-function createValidatorMap(validatorCfgs) {
-  return validatorCfgs.reduce((vMap, validator) => {
-    const { topic, validate } = validator;
-    vMap.set(topic, validate);
+export default function validateTopic(validatorCfgs: Configurations): ValidatorMiddleware {
+  const { validators, onTopicValidatorNotFound } = validatorCfgs;
 
-    return vMap;
-  }, new Map());
-}
+  const validatorsMap = createValidatorsMap(validators);
 
-export default function validateTopic(validatorCfgs: ValidatorConfigurations[]): Validator {
-  const validatorsMap = createValidatorMap(validatorCfgs);
-
-  return ({ topic, message }) => {
-    const validate = validatorsMap.get(topic);
-
-    if (validate) {
-      validate(message);
-    }
-  };
+  return createValidateMiddleware(validatorsMap, onTopicValidatorNotFound);
 }
