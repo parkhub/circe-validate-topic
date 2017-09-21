@@ -1,12 +1,25 @@
+/* @flow */
+
 import defaultErrorThrower from './defaultErrorThrower';
+import type { ValidatorMap } from './createValidatorsMap';
+import type { ErrorArguments } from './defaultErrorThrower';
 
 const validateResultDefaultResponse = 'Validate function did not return a reason';
 
+export type ErrorHandler = ErrorArguments => void;
+
+type ValueToValidate = {
+  topic: string,
+  message: Object | string
+};
+
+type Next = any => void;
+
 export default function createValidateMiddleware(
-  validatorsMap,
-  onTopicValidatorNotFound = defaultErrorThrower
+  validatorsMap: ValidatorMap,
+  onTopicValidatorNotFound: ErrorHandler = defaultErrorThrower
 ) {
-  return function validateMiddleware(valueToValidate, next) {
+  return function validateMiddleware(valueToValidate: ValueToValidate, next: Next) {
     const { topic, message } = valueToValidate;
     const topicValidator = validatorsMap.get(topic);
 
@@ -30,6 +43,10 @@ export default function createValidateMiddleware(
       return next(valueToValidate);
     }
 
-    return onInvalid({ topic, originalValue: valueToValidate, reason });
+    return onInvalid({
+      topic,
+      originalValue: valueToValidate,
+      reason
+    });
   };
 }

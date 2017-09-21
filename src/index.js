@@ -5,8 +5,11 @@
  * @author Daniel Olivares
  */
 
-import createValidatorMap from './lib/createValidatorMap';
+import createValidatorsMap from './lib/createValidatorsMap';
 import createValidateMiddleware from './lib/createValidateMiddleware';
+
+import type { ValidatorCfg } from './lib/createValidatorsMap';
+import type { ErrorHandler } from './lib/createValidateMiddleware';
 
 type Message = string | Object;
 type ObjectToValidate = {
@@ -16,21 +19,15 @@ type ObjectToValidate = {
 
 type ValidatorMiddleware = (ObjectToValidate, (ObjectToValidate) => void) => void;
 
-type ValidatorCfgs = {|
-  topic: string,
-  validate: (message: Message) => void,
-  onInvalid: (message: Message) => void
-|};
-
 type Configurations = {|
-  validators: ValidatorCfgs[],
-  onTopicValidatorNotFound: ObjectToValidate => void
+  validators: ValidatorCfg[],
+  onTopicValidatorNotFound: ErrorHandler
 |};
 
 export default function validateTopic(validatorCfgs: Configurations): ValidatorMiddleware {
   const { validators, onTopicValidatorNotFound } = validatorCfgs;
 
-  const validatorsMap = createValidatorMap(validators);
+  const validatorsMap = createValidatorsMap(validators);
 
   return createValidateMiddleware(validatorsMap, onTopicValidatorNotFound);
 }

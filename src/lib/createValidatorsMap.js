@@ -1,6 +1,28 @@
+/* @flow */
+
 import defaultErrorThrower from './defaultErrorThrower';
 
-export default function createValidatorMap(validatorCfgs) {
+type ValidateReturn = {|
+  isValid: boolean,
+  reason?: string
+|};
+
+type ValidateFunction = (Object | string) => ValidateReturn;
+
+export type ValidatorCfg = {|
+  topic: string,
+  validate: ValidateFunction,
+  onInvalid?: Object => void
+|};
+
+type ValidatorMapValue = {|
+  validate: ValidateFunction,
+  onInvalid?: Object => void
+|};
+
+export type ValidatorMap = Map<string, ValidatorMapValue>;
+
+export default function createValidatorMap(validatorCfgs: ValidatorCfg[]): ValidatorMap {
   return validatorCfgs.reduce((vMap, validator) => {
     const { topic, validate, onInvalid = defaultErrorThrower } = validator;
 

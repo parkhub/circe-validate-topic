@@ -1,4 +1,7 @@
 import createValidatorsMap from './createValidatorsMap';
+import defaultErrorThrower from './defaultErrorThrower';
+
+jest.mock('./defaultErrorThrower');
 
 test('Should throw if there are no validators configurations', () => {
   expect(() => createValidatorsMap()).toThrow();
@@ -40,7 +43,7 @@ test('Should create a validators map', () => {
   const validatorsMap = createValidatorsMap(validatorCfgs);
 
   const expectedValidatorsMap = new Map();
-  expectedValidatorsMap.set(topic, { validate });
+  expectedValidatorsMap.set(topic, { validate, onInvalid: defaultErrorThrower });
 
   expect(validatorsMap).toEqual(expectedValidatorsMap);
 });

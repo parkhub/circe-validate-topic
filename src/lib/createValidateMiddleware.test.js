@@ -1,4 +1,7 @@
 import createValidateMiddleware from './createValidateMiddleware';
+import defaultErrorThrower from './defaultErrorThrower';
+
+jest.mock('./defaultErrorThrower');
 
 test('Should successfully validate a topic message', () => {
   const topic = 'TEST_TOPIC';
@@ -40,17 +43,11 @@ test('Should call the default onInvalid that throws if none is configured w/defa
     message
   };
 
-  const defaultReason = 'Validate function did not return a reason';
-  const expectedError = new Error(
-    `${topic} failed. Reason: ${defaultReason}. Original Value: ${JSON.stringify(
-      originalValue,
-      null,
-      4
-    )}`
-  );
+  const reason = 'Validate function did not return a reason';
   const next = jest.fn();
 
-  expect(() => validator(originalValue, next)).toThrow(expectedError);
+  expect(() => validator(originalValue, next)).toThrow();
+  expect(defaultErrorThrower).toHaveBeenCalledWith({ topic, originalValue, reason });
 
   expect(validate).toHaveBeenCalledWith(message);
   expect(next).toHaveBeenCalledTimes(0);
@@ -63,7 +60,8 @@ test('Should call the default onInvalid that throws if none is configured', () =
     hello: 'hi'
   };
 
-  const validate = jest.fn(() => ({ isValid: false, reason: 'IT JUST FAILS' }));
+  const reason = 'IT JUST FAILS';
+  const validate = jest.fn(() => ({ isValid: false, reason }));
 
   const validatorsMap = new Map();
   validatorsMap.set(topic, { validate });
@@ -75,16 +73,10 @@ test('Should call the default onInvalid that throws if none is configured', () =
     message
   };
 
-  const expectedError = new Error(
-    `${topic} failed. Reason: IT JUST FAILS. Original Value: ${JSON.stringify(
-      originalValue,
-      null,
-      4
-    )}`
-  );
   const next = jest.fn();
 
-  expect(() => validator(originalValue, next)).toThrow(expectedError);
+  expect(() => validator(originalValue, next)).toThrow();
+  expect(defaultErrorThrower).toHaveBeenCalledWith({ topic, originalValue, reason });
 
   expect(validate).toHaveBeenCalledWith(message);
   expect(next).toHaveBeenCalledTimes(0);
@@ -171,17 +163,15 @@ test('Should throw from default onTopicValidatorNotFound function if none is def
     topic: notDefinedTopic,
     message
   };
-  const expectedError = new Error(
-    `${notDefinedTopic} failed. Reason: ${reason}. Original Value: ${JSON.stringify(
-      originalValue,
-      null,
-      4
-    )}`
-  );
 
   const next = jest.fn();
 
-  expect(() => validator(originalValue, next)).toThrow(expectedError);
+  expect(() => validator(originalValue, next)).toThrow();
+  expect(defaultErrorThrower).toHaveBeenCalledWith({
+    topic: notDefinedTopic,
+    originalValue,
+    reason
+  });
 
   expect(validate).toHaveBeenCalledTimes(0);
   expect(onInvalid).toHaveBeenCalledTimes(0);
