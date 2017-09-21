@@ -1,4 +1,4 @@
-import validateTopic from './';
+import createValidateMiddleware from './createValidateMiddleware';
 
 test('Should successfully validate a topic message', () => {
   const topic = 'TEST_TOPIC';
@@ -8,16 +8,13 @@ test('Should successfully validate a topic message', () => {
   };
 
   const validate = jest.fn(() => ({ isValid: true }));
-  const validatorCfgs = [
-    {
-      topic,
-      validate
-    }
-  ];
 
   const next = jest.fn();
 
-  const validator = validateTopic({ validators: validatorCfgs });
+  const validatorsMap = new Map();
+  validatorsMap.set(topic, { validate });
+
+  const validator = createValidateMiddleware(validatorsMap);
 
   validator({ topic, message }, next);
 
@@ -33,16 +30,11 @@ test('Should call the default onInvalid that throws if none is configured w/defa
   };
 
   const validate = jest.fn();
-  const validatorCfgs = [
-    {
-      topic,
-      validate
-    }
-  ];
 
-  const next = jest.fn();
+  const validatorsMap = new Map();
+  validatorsMap.set(topic, { validate });
 
-  const validator = validateTopic({ validators: validatorCfgs });
+  const validator = createValidateMiddleware(validatorsMap);
   const originalValue = {
     topic,
     message
@@ -56,6 +48,8 @@ test('Should call the default onInvalid that throws if none is configured w/defa
       4
     )}`
   );
+  const next = jest.fn();
+
   expect(() => validator(originalValue, next)).toThrow(expectedError);
 
   expect(validate).toHaveBeenCalledWith(message);
@@ -70,16 +64,12 @@ test('Should call the default onInvalid that throws if none is configured', () =
   };
 
   const validate = jest.fn(() => ({ isValid: false, reason: 'IT JUST FAILS' }));
-  const validatorCfgs = [
-    {
-      topic,
-      validate
-    }
-  ];
 
-  const next = jest.fn();
+  const validatorsMap = new Map();
+  validatorsMap.set(topic, { validate });
 
-  const validator = validateTopic({ validators: validatorCfgs });
+  const validator = createValidateMiddleware(validatorsMap);
+
   const originalValue = {
     topic,
     message
@@ -92,6 +82,8 @@ test('Should call the default onInvalid that throws if none is configured', () =
       4
     )}`
   );
+  const next = jest.fn();
+
   expect(() => validator(originalValue, next)).toThrow(expectedError);
 
   expect(validate).toHaveBeenCalledWith(message);
@@ -107,17 +99,13 @@ test('Should call the onInvalid function when validation does not pass with defa
 
   const validate = jest.fn(() => ({ isValid: false }));
   const onInvalid = jest.fn();
-  const validatorCfgs = [
-    {
-      topic,
-      validate,
-      onInvalid
-    }
-  ];
+
+  const validatorsMap = new Map();
+  validatorsMap.set(topic, { validate, onInvalid });
+
+  const validator = createValidateMiddleware(validatorsMap);
 
   const next = jest.fn();
-
-  const validator = validateTopic({ validators: validatorCfgs });
 
   validator({ topic, message }, next);
 
@@ -140,17 +128,13 @@ test('Should call the onInvalid function when validation does not pass', () => {
 
   const validate = jest.fn(() => ({ isValid: false, reason: 'IT JUST FAILS' }));
   const onInvalid = jest.fn();
-  const validatorCfgs = [
-    {
-      topic,
-      validate,
-      onInvalid
-    }
-  ];
+
+  const validatorsMap = new Map();
+  validatorsMap.set(topic, { validate, onInvalid });
+
+  const validator = createValidateMiddleware(validatorsMap);
 
   const next = jest.fn();
-
-  const validator = validateTopic({ validators: validatorCfgs });
 
   validator({ topic, message }, next);
 
@@ -176,17 +160,11 @@ test('Should throw from default onTopicValidatorNotFound function if none is def
     isValid: false
   }));
   const onInvalid = jest.fn();
-  const validatorCfgs = [
-    {
-      topic,
-      validate,
-      onInvalid
-    }
-  ];
 
-  const next = jest.fn();
+  const validatorsMap = new Map();
+  validatorsMap.set(topic, { validate, onInvalid });
 
-  const validator = validateTopic({ validators: validatorCfgs });
+  const validator = createValidateMiddleware(validatorsMap);
 
   const reason = 'Topic validator not found';
   const originalValue = {
@@ -201,6 +179,8 @@ test('Should throw from default onTopicValidatorNotFound function if none is def
     )}`
   );
 
+  const next = jest.fn();
+
   expect(() => validator(originalValue, next)).toThrow(expectedError);
 
   expect(validate).toHaveBeenCalledTimes(0);
@@ -208,7 +188,7 @@ test('Should throw from default onTopicValidatorNotFound function if none is def
   expect(next).toHaveBeenCalledTimes(0);
 });
 
-test('Should call global onTopicValidatorNotFound function if topic is not found', () => {
+test('Should call onTopicValidatorNotFound function if topic is not found', () => {
   const topic = 'TEST_TOPIC';
   const notDefinedTopic = 'NOT_FOUND';
   const message = {
@@ -220,18 +200,14 @@ test('Should call global onTopicValidatorNotFound function if topic is not found
     isValid: false
   }));
   const onInvalid = jest.fn();
-  const validatorCfgs = [
-    {
-      topic,
-      validate,
-      onInvalid
-    }
-  ];
-
   const onTopicValidatorNotFound = jest.fn();
-  const next = jest.fn();
 
-  const validator = validateTopic({ validators: validatorCfgs, onTopicValidatorNotFound });
+  const validatorsMap = new Map();
+  validatorsMap.set(topic, { validate, onInvalid });
+
+  const validator = createValidateMiddleware(validatorsMap, onTopicValidatorNotFound);
+
+  const next = jest.fn();
 
   validator({ topic: notDefinedTopic, message }, next);
 
